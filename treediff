@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+import hashlib
+
+
+def parse_command_line():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        'dir1',
+        type=str
+    )
+    parser.add_argument(
+        'dir2',
+        type=str
+    )
+
+    return parser.parse_args()
+
+
+def gen_list(directory) -> {}:
+
+    if not os.path.isdir(directory):
+        raise NotADirectoryError(str(directory))
+
+    hashes = {}
+
+    # compute hash/name pairs for each dir
+    for root, _, files in os.walk(directory):
+        for f in files:
+            _path = os.path.join(root, f)
+            with open(os.path.join(directory, _path), "rb") as file_to_hash:
+                # Read and update hash string value in blocks of 4K
+                # from https://www.quickprogrammingtips.com/python/how-to-calculate-sha256-hash-of-a-file-in-python.html
+                sha256_hash = hashlib.sha256()
+                for byte_block in iter(lambda: file_to_hash.read(4096), b""):
+                    sha256_hash.update(byte_block)
+                hashes[str(sha256_hash.hexdigest())] = str(_path)
+    return hashes
+
+
+def diff_files(dir1: str, dir2: str) -> ({}, {}):
+
+    list1: dict = gen_list(dir1)
+    list2: dict = gen_list(dir2)
+
+    del_list = []
+
+    # for each hash in 1 only, add to list1
+    for k in list1.keys():
+        if k in list2:
+            del_list.append(k)
+
+    for k in del_list:
+        list1.pop(k)
+        list2.pop(k)
+
+    del_list = []
+
+    # for each hash in 2 only, add to list2
+    for k in list2.keys():
+        if k in list1:
+            del_list.append(k)
+
+    for k in del_list:
+        list1.pop(k)
+        list2.pop(k)
+
+    # return lists as tuple (list1, list2)
+    return list1, list2
+
+
+if __name__ == '__main__':
+
+    arguments = parse_command_line()
+    d1, d2 = diff_files(arguments.dir1, arguments.dir2)
+    print('-' * 40 + str(arguments.dir1) + '-' * (80 - len(str(arguments.dir1))))
+    for _, v in d1.items():
+        print(str(v))
+    print('-' * 40 + str(arguments.dir2) + '-' * (80 - len(str(arguments.dir2))))
+    for _, v in d2.items():
+        print(str(v))
