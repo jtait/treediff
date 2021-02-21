@@ -31,7 +31,7 @@ def gen_list(directory) -> {}:
     for root, _, files in os.walk(directory):
         for f in files:
             _path = os.path.join(root, f)
-            with open(os.path.join(directory, _path), "rb") as file_to_hash:
+            with open(_path, "rb") as file_to_hash:
                 # Read and update hash string value in blocks of 4K
                 # from https://www.quickprogrammingtips.com/python/how-to-calculate-sha256-hash-of-a-file-in-python.html
                 sha256_hash = hashlib.sha256()
@@ -45,6 +45,8 @@ def diff_files(dir1: str, dir2: str) -> ({}, {}):
 
     list1: dict = gen_list(dir1)
     list2: dict = gen_list(dir2)
+
+    print("{} files in {}, {} files in {}".format(str(len(list1)), str(dir1), str(len(list2)), str(dir2)))
 
     del_list = []
 
